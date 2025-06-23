@@ -3,9 +3,18 @@ from discord.ext import commands
 import logging
 from dotenv import load_dotenv
 import os
+from google import genai # Import the Gemini library
 
 load_dotenv()
 token = os.getenv('DISCORD_TOKEN')
+gemini_api_key = os.getenv('GEMINI_TOKEN') # Get Gemini API key from .env
+
+# Configure Gemini API
+if gemini_api_key:
+    client = genai.Client(api_key=gemini_api_key)
+else:
+    print("Warning: GEMINI_API_KEY not found. Search command will not work.")
+    model = None
 
 # Logging setup
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
@@ -159,5 +168,34 @@ async def resume(ctx):
         await ctx.send("▶️ Stream resumed.")
     else:
         await ctx.send("❌ Stream is not paused.")
+
+@bot.command()
+async def search(ctx, *, query: str):
+    await ctx.send(f"🔍 Searching for: `{query}`...")
+    try:
+        response = client.models.generate_content(model="gemini-2.5-flash", contents=(query+"in 2000 characters or less"))
+        # Gemini sometimes returns a 'parts' object directly, sometimes as a list
+        if hasattr(response, 'parts') and response.parts:
+            # Join the text from all parts
+            result_text = " ".join([part.text for part in response.parts if hasattr(part, 'text')])
+        elif hasattr(response, 'text'):
+            result_text = response.text
+        else:
+            result_text = "Could not retrieve a valid text response from Gemini."
+
+        if result_text:
+            # Discord message character limit is 2000
+            if len(result_text) > 2000:
+                await ctx.send("📝 Result too long, sending first 2000 characters:")
+                await ctx.send(result_text[:2000] + "...")
+            else:
+                await ctx.send(f"✅ Search result:\n```\n{result_text}\n```")
+        else:
+            await ctx.send("🤷 No specific text response found from Gemini.")
+
+    except Exception as e:
+        logging.error(f"Error during Gemini search: {e}")
+        await ctx.send(f"❌ An error occurred during the search: {e}")
+
 
 bot.run(token)
