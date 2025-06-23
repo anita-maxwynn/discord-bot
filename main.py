@@ -94,6 +94,36 @@ async def url(ctx, number: str):
     current_stream = number
     await ctx.send(f"✅ Now playing stream {number}.")
 
+
+
+@bot.command()
+async def assign(ctx, member: discord.Member):
+    mod_role = discord.utils.get(ctx.guild.roles, name='mod')
+    if not mod_role:
+        await ctx.send("❌ 'mod' role not found.")
+        return
+
+    # Check if author is admin or already has 'mod' role
+    is_admin = ctx.author.guild_permissions.administrator
+    has_mod = mod_role in ctx.author.roles
+
+    if not (is_admin or has_mod):
+        await ctx.send("❌ You don’t have permission to assign the mod role.")
+        return
+
+    await member.add_roles(mod_role)
+    await ctx.send(f"✅ {mod_role.name} role assigned to {member.mention}.")
+
+
+@bot.command()
+async def unassign(ctx):
+    mod_role = discord.utils.get(ctx.guild.roles, name='mod')
+    if mod_role in ctx.author.roles:
+        await ctx.author.remove_roles(mod_role)
+        await ctx.send(f'Role {mod_role.name} removed from {ctx.author.mention}.')
+    else:
+        await ctx.send('You do not have that role.')
+
 @bot.command()
 async def pause(ctx):
     if not is_admin_or_mod(ctx):
