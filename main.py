@@ -172,7 +172,7 @@ async def search(ctx, *, query: str):
                 await ctx.send("📝 Result too long, sending first 2000 characters:")
                 await ctx.send(result_text[:2000] + "...")
             else:
-                await ctx.send(f"✅ Search result:\n```\n{result_text}\n```")
+                await ctx.send(f"✅ Search result:\n{result_text}")
         else:
             await ctx.send("🤷 No specific text response found from Gemini.")
     except Exception as e:
